@@ -1,0 +1,15 @@
+services:
+
+  mysql:
+    image: mysql:5.7  # 选择MySQL的版本，也可以使用8.0等
+    container_name: mysql
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: 'tcmDB'  # 设置数据库名
+      MYSQL_USER: 'oasis'  # 设置数据库用户名
+      MYSQL_PASSWORD: 'fs'  # 设置数据库密码
+      MYSQL_ROOT_PASSWORD: 'fs'  # 设置root用户的密码
+    ports:
+      - '3306:3306'  # 映射端口到宿主机
+    volumes:
+      - /var/lib/mysql:/var/lib/mysql # 持久化MySQL数据
