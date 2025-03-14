@@ -4,6 +4,7 @@ import (
 	"tcm-server-go/config"
 	"tcm-server-go/controllers"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +13,14 @@ func main() {
 
 	// 初始化数据库连接
 	config.InitDB()
+
+	// 启用 CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:8080"}, // 允许前端访问的地址
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true, // 允许跨域请求携带 Cookie
+	}))
 
 	// 路由
 	r.POST("/register", controllers.Register)
@@ -22,5 +31,5 @@ func main() {
 	r.GET("/progress", controllers.CallProgress)
 
 	// 启动服务
-	r.Run(":8080")
+	r.Run(":8082")
 }
