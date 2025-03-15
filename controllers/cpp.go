@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"tcm-server-go/services" // 引入你定义的服务
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,4 +63,82 @@ func CallProgress(c *gin.Context) {
 
 	// 返回 C++ API 的响应
 	c.JSON(http.StatusOK, responseData)
+}
+
+func AnalyzeStreamGraph(c *gin.Context) {
+	// 获取上传的文件
+	streamGraph, err := c.FormFile("streamGraph") // "streamGraph" 是前端上传的字段名
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 你可以读取文件内容
+	file, err := streamGraph.Open()
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	defer file.Close()
+
+	// 如果你需要读取文件内容，可以使用 io.Reader
+	fileContent := make([]byte, streamGraph.Size)
+	_, err = file.Read(fileContent)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	time.Sleep(5 * time.Second)
+
+	// 返回响应
+	c.JSON(200, gin.H{
+		"fileSize":            82345678,
+		"nodeCount":           5000,
+		"edgeCount":           10000,
+		"maxDegree":           100,
+		"avgDegree":           4.0,
+		"density":             0.05,
+		"connectedComponents": 3,
+		"filePath":            "/path/to/graph/stream.txt",
+	})
+}
+
+func AnalyzeQueryGraph(c *gin.Context) {
+	// 获取上传的文件
+	queryGraph, err := c.FormFile("queryGraph")
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 你可以读取文件内容
+	file, err := queryGraph.Open()
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	defer file.Close()
+
+	// 如果你需要读取文件内容，可以使用 io.Reader
+	fileContent := make([]byte, queryGraph.Size)
+	_, err = file.Read(fileContent)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	time.Sleep(5 * time.Second)
+
+	// 返回响应
+	c.JSON(200, gin.H{
+		"fileSize":            12345678,
+		"nodeCount":           5000,
+		"edgeCount":           10000,
+		"maxDegree":           100,
+		"avgDegree":           4.0,
+		"density":             0.05,
+		"connectedComponents": 3,
+		"filePath":            "/path/to/graph/query.txt",
+	})
 }
