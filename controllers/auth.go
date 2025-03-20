@@ -54,7 +54,7 @@ func Login(c *gin.Context) {
 
 	var user models.User
 	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid email"})
 		return
 	}
 
@@ -105,4 +105,51 @@ func UpdateUserProfile(c *gin.Context) {
 			"bio":   userToUpdate.Bio,
 		},
 	})
+}
+
+func UpdateUserPassword(c *gin.Context) {
+	var passwordData struct {
+		Email           string `json:"email"`
+		CurrentPassword string `json:"currentPassword"`
+		NewPassword     string `json:"newPassword"`
+	}
+
+	// 绑定 JSON 数据
+	if err := c.ShouldBindJSON(&passwordData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	// 查找用户
+	var user models.User
+	if err := config.DB.Where("email = ?", passwordData.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// 验证旧密码是否正确
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(passwordData.CurrentPassword)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Incorrect current password"})
+		return
+	}
+
+	// 加密新密码
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordData.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash new password"})
+		return
+	}
+
+	// 更新数据库中的密码
+	if err := config.DB.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
+		return
+	}
+
+	// 返回成功信息
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "Password updated successfully!",
+	})
+
 }
