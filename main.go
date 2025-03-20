@@ -25,6 +25,7 @@ func main() {
 	// 路由
 	r.POST("/register", controllers.Register)
 	r.POST("/login", controllers.Login)
+	r.POST("/updateUserProfile", controllers.UpdateUserProfile)
 
 	// 添加 C++ API 接口路由
 	r.POST("/match", controllers.CallMatch)

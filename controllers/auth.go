@@ -28,6 +28,8 @@ func Register(c *gin.Context) {
 		Name:     input.Name,
 		Email:    input.Email,
 		Password: string(hashedPassword),
+		Phone:    "",
+		Bio:      "",
 	}
 	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
@@ -67,6 +69,40 @@ func Login(c *gin.Context) {
 		"user": gin.H{
 			"name":  user.Name,
 			"email": user.Email,
+		},
+	})
+}
+
+func UpdateUserProfile(c *gin.Context) {
+	var input models.User
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
+		return
+	}
+
+	// 获取请求体中的 email
+	userEmail := input.Email
+
+	// 查找用户
+	var userToUpdate models.User
+	if err := config.DB.Where("email = ?", userEmail).First(&userToUpdate).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if err := config.DB.Model(&userToUpdate).Updates(&input).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "User updated successfully!",
+		"data": gin.H{
+			"name":  userToUpdate.Name,
+			"email": userToUpdate.Email,
+			"phone": userToUpdate.Phone,
+			"bio":   userToUpdate.Bio,
 		},
 	})
 }
