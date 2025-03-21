@@ -1,10 +1,11 @@
 package controllers
 
 import (
+	"bufio"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"tcm-server-go/services" // 引入你定义的服务
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -73,7 +74,7 @@ func AnalyzeStreamGraph(c *gin.Context) {
 		return
 	}
 
-	// 你可以读取文件内容
+	// 读取文件内容
 	file, err := streamGraph.Open()
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -81,26 +82,57 @@ func AnalyzeStreamGraph(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// 如果你需要读取文件内容，可以使用 io.Reader
-	fileContent := make([]byte, streamGraph.Size)
-	_, err = file.Read(fileContent)
-	if err != nil {
+	nodeDegrees := make(map[string]int)
+	edgeCount := 0
+
+	// 流式读取文件内容
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		parts := strings.Fields(scanner.Text())
+		if len(parts) != 6 {
+			continue // 跳过格式不对的行
+		}
+
+		src, dst := parts[0], parts[1]
+		nodeDegrees[src]++
+		nodeDegrees[dst]++
+		edgeCount++
+	}
+
+	if err := scanner.Err(); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	time.Sleep(5 * time.Second)
+	// 计算最大度数 & 平均度数
+	maxDegree, totalDegree := 0, 0
+	for _, degree := range nodeDegrees {
+		totalDegree += degree
+		if degree > maxDegree {
+			maxDegree = degree
+		}
+	}
+
+	nodeCount := len(nodeDegrees)
+	avgDegree := float64(totalDegree) / float64(nodeCount)
+	density := float64(edgeCount) / float64(nodeCount*(nodeCount-1))
+
+	// 获取文件大小
+	fileSize := streamGraph.Size
+
+	// 文件路径
+	filePath := streamGraph.Filename
 
 	// 返回响应
 	c.JSON(200, gin.H{
-		"fileSize":            82345678,
-		"nodeCount":           5000,
-		"edgeCount":           10000,
-		"maxDegree":           100,
-		"avgDegree":           4.0,
-		"density":             0.05,
+		"fileSize":            fileSize,
+		"nodeCount":           nodeCount,
+		"edgeCount":           edgeCount,
+		"maxDegree":           maxDegree,
+		"avgDegree":           avgDegree,
+		"density":             density,
 		"connectedComponents": 3,
-		"filePath":            "/path/to/graph/stream.txt",
+		"filePath":            filePath,
 	})
 }
 
@@ -112,7 +144,7 @@ func AnalyzeQueryGraph(c *gin.Context) {
 		return
 	}
 
-	// 你可以读取文件内容
+	// 读取文件内容
 	file, err := queryGraph.Open()
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -120,25 +152,56 @@ func AnalyzeQueryGraph(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// 如果你需要读取文件内容，可以使用 io.Reader
-	fileContent := make([]byte, queryGraph.Size)
-	_, err = file.Read(fileContent)
-	if err != nil {
+	nodeDegrees := make(map[string]int)
+	edgeCount := 0
+
+	// 流式读取文件内容
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		parts := strings.Fields(scanner.Text())
+		if len(parts) == 0 || parts[0] != "e" {
+			continue // 跳过格式不对的行
+		}
+
+		src, dst := parts[2], parts[3]
+		nodeDegrees[src]++
+		nodeDegrees[dst]++
+		edgeCount++
+	}
+
+	if err := scanner.Err(); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	time.Sleep(5 * time.Second)
+	// 计算最大度数 & 平均度数
+	maxDegree, totalDegree := 0, 0
+	for _, degree := range nodeDegrees {
+		totalDegree += degree
+		if degree > maxDegree {
+			maxDegree = degree
+		}
+	}
+
+	nodeCount := len(nodeDegrees)
+	avgDegree := float64(totalDegree) / float64(nodeCount)
+	density := float64(edgeCount) / float64(nodeCount*(nodeCount-1))
+
+	// 获取文件大小
+	fileSize := queryGraph.Size
+
+	// 文件路径
+	filePath := queryGraph.Filename
 
 	// 返回响应
 	c.JSON(200, gin.H{
-		"fileSize":            12345678,
-		"nodeCount":           5000,
-		"edgeCount":           10000,
-		"maxDegree":           100,
-		"avgDegree":           4.0,
-		"density":             0.05,
+		"fileSize":            fileSize,
+		"nodeCount":           nodeCount,
+		"edgeCount":           edgeCount,
+		"maxDegree":           maxDegree,
+		"avgDegree":           avgDegree,
+		"density":             density,
 		"connectedComponents": 3,
-		"filePath":            "/path/to/graph/query.txt",
+		"filePath":            filePath,
 	})
 }
