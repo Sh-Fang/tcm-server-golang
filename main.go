@@ -22,19 +22,23 @@ func main() {
 		AllowCredentials: true, // 允许跨域请求携带 Cookie
 	}))
 
-	// 路由
+	// auth 路由
 	r.POST("/register", controllers.Register)
 	r.POST("/login", controllers.Login)
 	r.POST("/updateUserProfile", controllers.UpdateUserProfile)
 	r.POST("/updateUserPassword", controllers.UpdateUserPassword)
 
-	// 添加 C++ API 接口路由
-	r.POST("/match", controllers.SubgraphMatching)
-	r.GET("/progress", controllers.GetSubgraphMatchingProgress)
+	// C++ API 接口路由
+	r.POST("/subgraphMatching", controllers.SubgraphMatching)
+	r.GET("/getSubgraphMatchingProgress", controllers.GetSubgraphMatchingProgress)
 
 	// 分析图数据
 	r.POST("/analyzeStreamGraph", controllers.AnalyzeStreamGraph)
 	r.POST("/analyzeQueryGraph", controllers.AnalyzeQueryGraph)
+
+	// 图可视化
+	r.POST("/visualizeStreamGraph", controllers.VisualizeStreamGraph)
+	r.POST("/visualizeQueryGraph", controllers.VisualizeQueryGraph)
 
 	// 启动服务
 	r.Run(":8082")
