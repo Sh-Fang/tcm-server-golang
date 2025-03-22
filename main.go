@@ -29,8 +29,8 @@ func main() {
 	r.POST("/updateUserPassword", controllers.UpdateUserPassword)
 
 	// 添加 C++ API 接口路由
-	r.POST("/match", controllers.CallMatch)
-	r.GET("/progress", controllers.CallProgress)
+	r.POST("/match", controllers.SubgraphMatching)
+	r.GET("/progress", controllers.GetSubgraphMatchingProgress)
 
 	// 分析图数据
 	r.POST("/analyzeStreamGraph", controllers.AnalyzeStreamGraph)

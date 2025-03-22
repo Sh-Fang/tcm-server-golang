@@ -9,12 +9,11 @@ import (
 	"os"
 	"strings"
 
-	// 引入你定义的服务
 	"github.com/gin-gonic/gin"
 )
 
 // 调用 C++ /match 接口
-func CallMatch(c *gin.Context) {
+func SubgraphMatching(c *gin.Context) {
 	// 获取上传的文件
 	streamGraph, err := c.FormFile("streamGraph") // "streamGraph" 是前端上传的字段名
 	if err != nil {
@@ -28,6 +27,7 @@ func CallMatch(c *gin.Context) {
 		return
 	}
 
+	// 解析 POST 请求的 JSON 参数
 	var params map[string]any
 	paramsStr := c.PostForm("params")
 	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
@@ -35,7 +35,7 @@ func CallMatch(c *gin.Context) {
 		return
 	}
 
-	// 把所有非字符串的参数转换成字符串类型，如果本身字符串是"true"或"false"，则转换成"y"或"n"
+	// 把所有非字符串的参数转换成字符串类型
 	for key, value := range params {
 		if _, ok := value.(string); !ok {
 			if value == true {
@@ -52,6 +52,7 @@ func CallMatch(c *gin.Context) {
 	streamFilePath := "/tmp/tcm_download/" + streamGraph.Filename
 	queryFilePath := "/tmp/tcm_download/" + queryGraph.Filename
 
+	// 保存上传的文件
 	if err := c.SaveUploadedFile(streamGraph, streamFilePath); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -62,6 +63,7 @@ func CallMatch(c *gin.Context) {
 		return
 	}
 
+	// 拼接参数
 	params["stream_path"] = streamFilePath
 	params["query_path"] = queryFilePath
 
@@ -94,7 +96,7 @@ func CallMatch(c *gin.Context) {
 }
 
 // 调用 C++ /progress 接口
-func CallProgress(c *gin.Context) {
+func GetSubgraphMatchingProgress(c *gin.Context) {
 	url := "http://localhost:8081/progress"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -107,8 +109,6 @@ func CallProgress(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
-
-	fmt.Println(string(body))
 
 	// 返回 C++ API 的响应
 	c.JSON(http.StatusOK, gin.H{"progress": string(body)})
@@ -130,6 +130,7 @@ func AnalyzeStreamGraph(c *gin.Context) {
 	}
 	defer file.Close()
 
+	// 初始化
 	nodeDegrees := make(map[string]int)
 	edgeCount := 0
 
