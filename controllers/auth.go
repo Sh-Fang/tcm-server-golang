@@ -4,10 +4,17 @@ import (
 	"net/http"
 	"tcm-server-go/config"
 	"tcm-server-go/models"
+	"tcm-server-go/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func Test(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Test",
+	})
+}
 
 func Register(c *gin.Context) {
 	var input models.User
@@ -25,12 +32,15 @@ func Register(c *gin.Context) {
 
 	// 创建用户
 	user := models.User{
+		UserID: utils.GenerateSonyflakeID(),
 		Name:     input.Name,
 		Email:    input.Email,
 		Password: string(hashedPassword),
 		Phone:    "",
 		Bio:      "",
 	}
+
+	// 写入数据库
 	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 		return
@@ -52,6 +62,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// 查找用户
 	var user models.User
 	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid email"})
@@ -69,6 +80,7 @@ func Login(c *gin.Context) {
 		"user": gin.H{
 			"name":  user.Name,
 			"email": user.Email,
+			"token": user.UserID,
 		},
 	})
 }
@@ -90,6 +102,7 @@ func UpdateUserProfile(c *gin.Context) {
 		return
 	}
 
+	// 更新用户信息
 	if err := config.DB.Model(&userToUpdate).Updates(&input).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 		return

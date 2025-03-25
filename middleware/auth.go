@@ -3,41 +3,73 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+// 定义 JWT 密钥（生产环境中应使用环境变量存储）
+var jwtSecret = []byte("your-secret-key") // 请替换为安全的密钥
+
+// 生成 Token
+func GenerateToken(userID uint) (string, error) {
+	// 创建 Token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24小时过期
+	})
+
+	// 生成 Token 字符串
+	return token.SignedString(jwtSecret)
+}
+
+// 验证 Token
+func ValidateToken(tokenString string) (*jwt.Token, error) {
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// 确保使用的是正确的签名方法
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return jwtSecret, nil
+	})
+}
+
 
 // AuthMiddleware 认证中间件
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从请求头获取 Authorization 令牌
-		token := c.GetHeader("Authorization")
-
-		// 这里假设 Token 是 "Bearer <token_value>" 形式
-		if token == "" || !strings.HasPrefix(token, "Bearer ") {
+		// 获取 Authorization 头
+		tokenString := c.GetHeader("Authorization")
+		if tokenString == "" || !strings.HasPrefix(tokenString, "Bearer ") {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "未提供认证信息"})
-			c.Abort() // 终止请求
+			c.Abort()
 			return
 		}
 
-		// 提取 Token 值（去掉 "Bearer " 前缀）
-		token = strings.TrimPrefix(token, "Bearer ")
+		// 提取 Token
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		// 这里应该校验 Token 是否有效（如调用 JWT 库解析 Token）
-		if !validateToken(token) {
+		// 验证 Token
+		token, err := ValidateToken(tokenString)
+		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的 Token"})
 			c.Abort()
 			return
 		}
 
-		// 认证通过，继续执行请求
+		// 解析 Token Claims
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token 解析失败"})
+			c.Abort()
+			return
+		}
+
+		// 将 user_id 存入上下文
+		c.Set("user_id", uint(claims["user_id"].(float64)))
+
+		// 继续请求
 		c.Next()
 	}
-}
-
-// 这里是一个假设的 Token 验证函数，你需要替换成真正的 JWT 验证逻辑
-func validateToken(token string) bool {
-	// 在这里解析 JWT Token，检查有效性
-	// 这里只是模拟，实际应用中应该使用 JWT 解析库，如 github.com/golang-jwt/jwt/v4
-	return token == "valid-token" // 假设 "valid-token" 是一个合法的 Token
 }

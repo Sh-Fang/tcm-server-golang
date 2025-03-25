@@ -2,6 +2,7 @@ package routes
 
 import (
 	"tcm-server-go/controllers"
+	"tcm-server-go/middleware"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -27,21 +28,24 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	// C++ API 接口路由
-	apiRoutes := r.Group("/match")
+	matchRoutes := r.Group("/match")
+	matchRoutes.Use(middleware.AuthMiddleware())
 	{
-		apiRoutes.POST("/subgraphMatch", controllers.SubgraphMatching)
-		apiRoutes.GET("/getSubgraphMatchProgress", controllers.GetSubgraphMatchingProgress)
+		matchRoutes.POST("/subgraphMatch", controllers.SubgraphMatching)
+		matchRoutes.GET("/getSubgraphMatchProgress", controllers.GetSubgraphMatchingProgress)
 	}
 
 	// 分析图数据
-	graphAnalysisRoutes := r.Group("/analyze")
+	analyzeRoutes := r.Group("/analyze")
+	analyzeRoutes.Use(middleware.AuthMiddleware())
 	{
-		graphAnalysisRoutes.POST("/streamGraph", controllers.AnalyzeStreamGraph)
-		graphAnalysisRoutes.POST("/queryGraph", controllers.AnalyzeQueryGraph)
+		analyzeRoutes.POST("/streamGraph", controllers.AnalyzeStreamGraph)
+		analyzeRoutes.POST("/queryGraph", controllers.AnalyzeQueryGraph)
 	}
 
 	// 图可视化
 	visualizationRoutes := r.Group("/visualize")
+	visualizationRoutes.Use(middleware.AuthMiddleware())
 	{
 		visualizationRoutes.POST("/streamGraph", controllers.VisualizeStreamGraph)
 		visualizationRoutes.POST("/queryGraph", controllers.VisualizeQueryGraph)
